@@ -18,12 +18,14 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // CORS: cho phép FE Next.js ở localhost:3000 gọi sang
+
 app.use(
   cors({
     origin: "http://localhost:3000",
     credentials: true,
   })
 );
+
 
 // Static (nếu bạn có thư mục public/uploads…)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -40,12 +42,10 @@ if (!mongoURI) {
 // Lưu ý: các option useNewUrlParser/useUnifiedTopology đã deprecated trên driver v4+.
 // Không cần thiết, mình giữ tối giản và ổn định.
 mongoose
-  .connect(mongoURI /* , { dbName: 'DB_DATN' } */)
+  .connect(process.env.MONGO_URI, { dbName: "DB_DATN" })
   .then(() => console.log("✅ Kết nối MongoDB thành công"))
-  .catch((err) => {
-    console.error("❌ Lỗi kết nối MongoDB:", err);
-    process.exit(1);
-  });
+  .catch((err) => console.error("❌ Lỗi kết nối MongoDB:", err));
+
 
 /* =========================
  * 3) Routes
@@ -54,11 +54,18 @@ mongoose
 const productsRouter = require("./routes/products");
 const categoriesRouter = require("./routes/categories");
 const brandsRouter = require("./routes/brands");
+const userRouter = require("./routes/users");
+const adminRouter = require("./routes/admin");
+const { auth, isAdmin } = require("./middleware/authMiddleware");
+
 
 // Prefix KHÔNG có /api vì BE của bạn đang dùng /products, /categories, /brands
 app.use("/products", productsRouter);
 app.use("/categories", categoriesRouter);
 app.use("/brands", brandsRouter);
+app.use("/api/users", userRouter);
+app.use("/api/admin", adminRouter);
+
 
 // (Optional) landing route
 app.get("/", (_req, res) => {
@@ -86,3 +93,4 @@ if (require.main === module) {
     console.log(`🚀 Express listening on port ${PORT}`);
   });
 }
+console.log("✅ MONGO_URI hiện tại:", process.env.MONGO_URI);
